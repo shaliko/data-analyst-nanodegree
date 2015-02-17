@@ -55,7 +55,7 @@ numbers
 udacious <- c("Chris Saden", "Lauren Castellano",
               "Sarah Spikes","Dean Eckles",
               "Andy Brown", "Moira Burke",
-              "Kunal Chawla", YOUR_NAME)
+              "Kunal Chawla", "Shalva Usubov")
 
 # Notice how R updates 'udacious' in the workspace.
 # It should now say something like 'chr[1:8]'.
@@ -175,7 +175,7 @@ mtcars
 
 str(mtcars)
 
-dim(mtcars)
+dim(mtcars)[1]
 
 # Scroll down for the answer.
 
