@@ -1,0 +1,109 @@
+```{r}
+library(ggplot2)
+data(diamonds)
+
+ggplot(diamonds, aes(x=price)) + geom_histogram()
+
+
+summary(diamonds$price)
+
+nrow(diamonds[diamonds$price < 500,])
+nrow(diamonds[diamonds$price < 250,])
+nrow(diamonds[diamonds$price >= 15000,])
+
+ggplot(aes(x=price), data = diamonds) + geom_histogram(binwidth = 250)+
+  scale_x_continuous(breaks = seq(0,5000,250), limit = c(0,5000))
+
+#For diamonds that cost less than $2,000, the most common price of a diamond is around $700 (binwidth = 1)
+
+ggplot(aes(x=price), data = diamonds) + geom_histogram(binwidth = 250)+
+  scale_x_continuous(breaks = seq(0,5000,250), limit = c(0,5000)) + facet_wrap(~cut, ncol=2)
+
+
+by(diamonds$price,diamonds$cut,summary)
+by(diamonds$price,diamonds$cut,max)
+
+
+qplot(x = price, data = diamonds) + facet_wrap(~cut)
+
+qplot(x = price, data = diamonds) + facet_wrap(~cut, scales = "free_y")
+
+ggplot(aes(x=price/carat), data = na.omit(diamonds)) + geom_histogram()+
+  facet_wrap(~cut, scales  = "free_y") + scale_x_log10()
+
+
+ggplot(aes(x = color, y = price/carat), data = na.omit(diamonds)) + geom_boxplot()
+```
+
+#Interquartile Range - IQR
+```{r}
+summary(subset(diamonds,color=='D')$price)
+summary(subset(diamonds,color=='J')$price)
+IQR(subset(diamonds, color == 'D')$price)
+by(diamonds$price, diamonds$color, IQR)
+```
+
+
+#Price per Carat Box Plots by Color
+```{r}
+ggplot(aes(x = color, y = price/carat), data = diamonds) + geom_boxplot(aes(fill=color)) +
+  ggsave('pricePerCaratInColor.png')
+```
+
+#Carat Frequency Polygon
+```{r}
+table(diamonds$carat)[table(diamonds$carat)>2000]
+```
+
+#Gapminder Data
+```{r}
+al = read.csv('alcohol_indicator.csv', header=TRUE, row.names=1)
+ggplot(data = al) + 
+  geom_freqpoly(aes(color = 'Year', x = al$X2005, y = (..count..)/sum(..count..))) + 
+  geom_freqpoly(aes(color = 'blue', x = al$X2008, y = (..count..)/sum(..count..))) +
+  xlab('Сount litre per people in a year') +
+  ylab('Average drink over countries') +
+  scale_colour_manual(values = c('green','blue'),
+                      labels = c('2005','2008')) +
+  ggsave('al.png')
+```
+
+#Exploring Your Friends' Birthdays
+```{r}
+library(lubridate)
+library(gridExtra)
+
+fb = read.csv('facebook_friends.csv', stringsAsFactors=FALSE)
+head(fb$Birthday)
+
+fb$b_date <- mdy(fb$Birthday)
+fb$b_year <- year(fb$b_date)
+fb$b_month <- month(fb$b_date)
+fb$b_day <- day(fb$b_date)
+```
+## How many people share your birthday? Do you know them?
+```{r}
+NROW(fb$Birthday)
+```
+## Which month contains the most number of birthdays?
+```{r}
+tbmonth = table(fb$b_month)
+
+which(tbmonth == max(tbmonth))
+```
+## How many birthdays are in each month?
+```{r}
+table(fb$b_month)
+```
+## Which day of the year has the most number of birthdays?
+```{r}
+tbday <- table(fb$b_day)
+
+which(tbday == max(tbday))
+```
+## Do you have at least 365 friends that have birthdays on everyday of the year?
+```{r}             
+if ((NROW(fb$b_day) > 365) == F) {
+  paste(c("No, I have only", as.character(NROW(fb$b_day)), 'friends'), collapse= " ")
+}
+```
