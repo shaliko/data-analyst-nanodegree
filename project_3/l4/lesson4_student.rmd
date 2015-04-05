@@ -91,13 +91,25 @@ Notes:
 
 ```{r Conditional Means}
 library(dplyr)
+age_groups <- group_by(pf, age)
+pf.fc_by_age <- summarize(age_groups,
+          friend_count_mean = mean(friend_count),
+          friend_count_median = median(friend_count),
+          n = n())
+pf.fc_by_age <- arrange(pf.fc_by_age, age)
+head(pf.fc_by_age)
 
+
+library(dplyr)
 ```
 
 Create your plot!
 
 ```{r Conditional Means Plot}
-
+library(ggplot2)
+pf <- read.csv('pseudo_facebook.tsv', sep='\t')
+names(pf.fc_by_age)
+ggplot(aes(age, friend_count_mean), data = pf.fc_by_age) + geom_line()
 ```
 
 ***
@@ -106,7 +118,18 @@ Create your plot!
 Notes:
 
 ```{r Overlaying Summaries with Raw Data}
-
+ggplot(aes(x = age, y=friend_count), data = pf) +
+  geom_point(alpha=0.05,
+             position= position_jitter(h = 0),
+             color = "orange") +
+  coord_trans(y = 'sqrt') + 
+  geom_line(stat = "summary", fun.y = mean)+
+  geom_line(stat="summary", fun.y = quantile, probs = 0.1,
+            linetype =2, color="blue") + 
+  geom_line(stat="summary", fun.y = quantile, probs = 0.5,
+            linetype =2, color="blue") + 
+  geom_line(stat="summary", fun.y = quantile, probs = 0.9,
+            linetype =2, color="blue")
 ```
 
 #### What are some of your observations of the plot?
@@ -125,7 +148,9 @@ Notes:
 Notes:
 
 ```{r Correlation}
+cor.test(pf$friend_count, pf$age)
 
+with(pf, cor.test(friend_count, age))
 ```
 
 Look up the documentation for the cor.test function.
@@ -139,7 +164,8 @@ Response:
 Notes:
 
 ```{r Correlation on Subsets}
-with(                 , cor.test(age, friend_count))
+?subset
+with(subset(pf, age <= 70)                 , cor.test(age, friend_count))
 ```
 
 ***
@@ -153,7 +179,8 @@ Notes:
 Notes:
 
 ```{r}
-
+ggplot(aes(x=www_likes_received, y=likes_received), data = pf) +
+  geom_point()
 ```
 
 ***
@@ -162,13 +189,17 @@ Notes:
 Notes:
 
 ```{r Strong Correlations}
-
+ggplot(aes(x=www_likes_received, y=likes_received), data=pf) +
+  geom_point() +
+  xlim(0,quantile(pf$www_likes_received, 0.95)) +
+  ylim(0,quantile(pf$likes_received, 0.95)) +
+  geom_smooth(method="lm", color="red")
 ```
 
 What's the correlation betwen the two variables? Include the top 5% of values for the variable in the calculation and round to 3 decimal places.
 
 ```{r Correlation Calcuation}
-
+cor.test(pf$www_likes_received,pf$likes_received)
 ```
 
 Response:
@@ -184,14 +215,17 @@ Notes:
 Notes:
 
 ```{r More Caution With Correlation}
-install.packages('alr3')
+#install.packages('alr3')
 library(alr3)
+data(Mitchell)
+names(Mitchell)
 ```
 
 Create your plot!
 
 ```{r Temp vs Month}
-
+ggplot(aes(x=Month, y=Temp), data=Mitchell) +
+  geom_point()
 ```
 
 ***
@@ -203,7 +237,7 @@ b. What is the actual correlation of the two variables?
 (Round to the thousandths place)
 
 ```{r Noisy Scatterplots}
-
+cor.test(Mitchell$Month, Mitchell$Temp)
 ```
 
 ***
@@ -212,7 +246,12 @@ b. What is the actual correlation of the two variables?
 Notes:
 
 ```{r Making Sense of Data}
+ggplot(aes(x=(Month%%12), y=Temp), data=Mitchell)+
+  geom_point() 
 
+ggplot(aes(x=Month, y=Temp), data=Mitchell) +
+  geom_point() +
+  scale_x_discrete(breaks = seq(0, 203, 12))
 ```
 
 ***
@@ -231,7 +270,9 @@ Notes:
 Notes:
 
 ```{r Understanding Noise: Age to Age Months}
-
+pf$age_with_months <- pf$age + (1.0 - pf$dob_month/12)
+names(pf)
+head(pf$age_with_months)
 ```
 
 ***
@@ -239,12 +280,20 @@ Notes:
 ### Age with Months Means
 
 ```{r Age with Months Means}
-
+age_months_groups <- group_by(pf, age_with_months)
+pf.fc_by_age_months <- summarise(age_months_groups,
+                                 friend_count_mean=mean(friend_count),
+                                 friend_count_median=median(friend_count),
+                                 n=n())
+pf.fc_by_age_months <- arrange(pf.fc_by_age_months, age_with_months)
+head(pf.fc_by_age_months)
 ```
 
 Programming Assignment
 ```{r Programming Assignment}
-
+ggplot(aes(y=friend_count_mean, x=age_with_months),
+       data = subset(pf.fc_by_age_months, age_with_months <= 71)) +
+  geom_line()
 ```
 
 ***
@@ -252,7 +301,9 @@ Programming Assignment
 ### Noise in Conditional Means
 
 ```{r Noise in Conditional Means}
-
+ggplot(aes(y=friend_count_mean,x=age_with_months),
+       data=filter(pf.fc_by_age_months, age_with_months<=71))+
+  geom_line()
 ```
 
 ***
@@ -261,7 +312,23 @@ Programming Assignment
 Notes:
 
 ```{r Smoothing Conditional Means}
+p1 <- ggplot(aes(age,friend_count_mean), data =subset(pf.fc_by_age, age<=71)) +
+  geom_line()+
+  geom_smooth()
 
+
+p2 <-  ggplot(aes(y=friend_count_mean,x=age_with_months),
+       data=filter(pf.fc_by_age_months, age_with_months<=71))+
+  geom_line()+
+  geom_smooth()
+
+p3 <- ggplot(aes(y= friend_count, x = round(age/5)*5),
+             data=subset(pf, age<= 71))+
+  geom_line(stat="summary", fun.y = mean)
+
+
+library(gridExtra)
+grid.arrange(p1,p2,p3,ncol=1)
 ```
 
 ***
@@ -273,7 +340,7 @@ Notes:
 
 ### Analyzing Two Variables
 Reflection:
-
+We learn the comparison two variables in our data. We learned how figure out correlation between 2 variables. We learn how do visualization for analyze two variables.
 ***
 
 Click **KnitHTML** to see all of your hard work and to have an html
