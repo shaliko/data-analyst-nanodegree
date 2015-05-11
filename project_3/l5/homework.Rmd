@@ -1,0 +1,113 @@
+---
+title: "Problem set 5.Rmd"
+author: "Shalva Usubov shaliko@ezid.ru"
+date: "10 мая 2015 г."
+output: html_document
+---
+
+Create a histogram of diamond prices.Facet the histogram by diamond color and use cut to color the histogram bars.
+
+The plot should look something like this. http://i.imgur.com/b5xyrOu.jpg
+
+Note: In the link, a color palette of type 'qual' was used to color the histogram using scale_fill_brewer(type = 'qual')
+
+```{r}
+library(ggplot2)
+data(diamonds)
+
+ggplot(data = diamonds, aes(x = price)) +
+  geom_histogram(aes(fill = cut))  +
+  scale_x_log10() +
+  facet_wrap(~color) +
+  scale_fill_brewer(type='qual')
+```
+
+Create a scatterplot of diamond price vs. table and color the points by the cut of the diamond.
+```{r}
+ggplot(data = diamonds, aes(x = table, y = price)) +
+  geom_point(aes(color = cut)) +
+  scale_x_continuous(limits = c(50,80), breaks = seq(50,80,2)) +
+  scale_colour_brewer(type = 'qual')
+```
+
+Create a scatterplot of diamond price vs. volume (x * y * z) and color the points by the clarity of diamonds. Use scale on the y-axis to take the log10 of price. You should also omit the top 1% of diamond volumes from the plot.
+```{r}
+diamonds$volume = diamonds$x * diamonds$y * diamonds$z
+
+ggplot(aes(x = volume, y = price), data = diamonds) +
+  geom_point(aes(color = clarity)) +
+  scale_y_log10() + 
+  xlab('Volume') +
+  coord_cartesian(xlim = c(0, quantile(diamonds$volume, 0.99))) +
+  scale_color_brewer(type = "div")
+```
+
+
+Proportion of Friendships Initiated
+```{r}
+pf <- read.delim('pseudo_facebook.tsv')
+pf$prop_initiated = pf$friendships_initiated / pf$friend_count
+head(pf$prop_initiated)
+```
+
+prop_initiated vs. tenure
+```{r}
+pf$year_joined <- floor(2014 - pf$tenure/365)
+pf$year_joined.bucket <- cut(pf$year_joined, c(2004,2009,2011,2012,2014))
+table(pf$year_joined.bucket)
+
+ggplot(aes(x = tenure, y = prop_initiated), data = subset(pf, !is.na(pf$year_joined))) + 
+  geom_line(aes(color = year_joined.bucket), stat = 'summary', fun.y = median)
+```
+
+Smoothing prop_initiated vs. tenure
+```{r}
+ggplot(aes(x = tenure, y = prop_initiated), data = subset(pf, !is.na(pf$year_joined))) + 
+  geom_line(aes(color = year_joined.bucket), stat = 'summary', fun.y = median) +
+  geom_smooth()
+```
+
+Largest Group Mean prop_initiated
+```{r}
+summary(subset(pf,year_joined.bucket == '(2012,2014]')$prop_initiated)
+```
+
+Price / Carat Binned, Faceted, & Colored
+```{r}
+ggplot(data = diamonds, aes(x = cut, y = price/carat)) +
+  facet_wrap(~clarity) +
+  geom_point(position = position_jitter(width = 0.4), aes(color = color)) +
+  scale_color_brewer(type = "div") +
+  theme_bw()
+```
+
+```{r}
+library(reshape2)
+library(dplyr)
+wm <- read.csv('indicator_age_of_marriage.csv')
+
+USSR <- c('Armenia', 'Azerbaijan', 'Belarus', 'Georgia', 'Kyrgyzstan', 'Kazakhstan', 'Russia', 'Tajikistan', 'Ukraine', 'Uzbekistan')
+
+bucket_year <- c(1616,1900,1990,2000,2005)
+#bucket_year <- c(2000,2001,2002,2003,2004,2005)
+wm_ussr <- filter(wm, X %in% USSR )
+wm_ussr <- transform(wm_ussr, X = factor(X, USSR))
+colnames(wm_ussr) <- as.numeric(substr(colnames(wm_ussr), start = 2, stop = 5))
+colnames(wm_ussr)[1] <- 'country'
+
+wm_ussr.long <- melt(wm_ussr,
+                      id = 'country',
+                      value.name = 'Average',
+                      variable.name = 'Year',
+                      measure.vars = colnames(wm_ussr)[-1])
+wm_ussr.long$Year <- as.numeric(as.character(wm_ussr.long$Year))
+wm_ussr.long$Average[is.na(wm_ussr.long$Average)] <- 0
+wm_ussr.long$year_bucket <- cut(wm_ussr.long$Year,
+                   breaks= bucket_year,
+                   labels=c('less than 1900','1900-1990','1990-2000','2000-2005'))
+
+ggplot(aes(x = Year, y = Average), data = wm_ussr.long) +
+  geom_smooth(aes(color = year_bucket)) +
+  facet_wrap(~country) +
+  ggsave('ussr.jpg')
+```
